@@ -1,0 +1,12 @@
+Grammar                             Action
+--------------------------------    -------------------------------------------- 
+expression0 : expression1 + term    expression0.val = expression1.val + term.val
+            | expression1 - term    expression0.val = expression1.val - term.val
+            | term                  expression0.val = term.val
+
+term0       : term1 * factor        term0.val = term1.val * factor.val
+            | term1 / factor        term0.val = term1.val / factor.val
+            | factor                term0.val = factor.val
+
+factor      : NUMBER                factor.val = int(NUMBER.lexval)
+            | ( expression )        factor.val = expression.val

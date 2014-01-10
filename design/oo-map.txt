@@ -1,0 +1,53 @@
+############################################################################
+#
+# database schema
+#
+############################################################################
+event_count {
+    id
+    device
+    create_time
+    index
+}
+
+id, device, create_time, index
+1,squid
+2,samba
+
+############################################################################
+#
+# Classes Design
+#
+############################################################################
+
+
+FileMonitor
+    __init__(device_name)
+
+    def sortDirectories(self):
+        '''Return a list of directories by ascend order,(start form the smallest
+        number)'''
+        
+    @staticmethod
+    def HasZipFile(directory):
+        '''Return true if the oldest directory contains a type of files,
+        e.g. type=gz will check *.gz'''
+        
+    @staticmethod
+    def SortFiles(directory):
+        '''Return a list of file names sorted in Descend order'''
+
+    @staticmethod
+    def DelDirectory(path):
+        "delete a directory under the monitored directory"
+        
+ParserFactory
+    getParser
+    getInboxPath
+    
+############################################################################
+# squid parser algorithm
+############################################################################
+if last_event_time is None (a new )
+    
+

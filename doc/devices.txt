@@ -1,0 +1,37 @@
+########################################################################
+# install justniffer on ubuntu
+########################################################################
+$ sudo add-apt-repository ppa:oreste-notelli/ppa 
+$ sudo apt-get update
+$ sudo apt-get install justniffer
+
+justniffer -i eth0 -p "port 80 or port 8080" -l "%request.timestamp(%s) %source.ip %request.header.host %request.size %request.url" 2>&1 | tee /opt/esm/dl/inbox/justniffer/audit.log
+
+justniffer -i eth0 -p "port 80 or port 8080" -l "%request.time %source.ip %request.header.host %request.size %request.url" 2>&1 | tee /opt/esm/dl/inbox/justniffer/audit.log
+
+justniffer -i eth0 >> /opt/test.log
+
+apt-get install daemon
+
+http://gotofritz.net/blog/weekly-challenge/restful-python-api-bottle/
+
+
+# 
+#       /etc/init.d/bottled
+#
+# Starts the bottled Daemon
+#
+# chkconfig: 345 92 8
+# description: bottled Daemon
+
+# processname: bottled
+
+# 
+#       /etc/rc.d/init.d/justniffer
+#
+# Starts the justniffer Daemon
+#
+# chkconfig: 345 91 9
+# description: Justniffer agent Daemon
+
+# processname: justniffer

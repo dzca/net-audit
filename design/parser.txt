@@ -1,0 +1,218 @@
+Query parser
+
+[1] load sample data into db
+dumping 1459 records
+mongoexport --db esm --collection events --out esm_events.json
+
+import
+mongoimport -d esm -c events --file esm_events.json
+
+[2] test sql query for parser
+$lt, $gt, $lte, $gte
+
+db.system.indexes.find()
+> db.system.indexes.find()
+{ "v" : 1, "key" : { "_id" : 1 }, "ns" : "esm.events", "name" : "_id_" }
+
+1.select ip, create_time, domain,size from events order by create_time desc:
+db.events.find(null, {_id:0,create_time:1,ip:1,domain: 1,size:1 }).sort({create_time:-1});
+
+2.select ip, create_time, domain,size from events where create_time [2012-11-23T20:42:58, 2012-11-23T20:50:58]
+new Date(year, month, day [, hour, minute, second, millisecond])
+db.events.find({create_time: {$gte: ISODate("2012-11-25T21:49:00Z"), $lte: ISODate("2012-11-25T21:49:13Z")}}, {_id:0,create_time:1,ip:1,domain: 1,size:1 }).sort({create_time:-1});
+count=17
+db.events.count({create_time: {$gte: ISODate("2012-11-25T21:49:00Z"), $lte: ISODate("2012-11-25T21:49:13Z")}});
+
+3. select distinct ip
+db.runCommand({"distinct":"events","key":"ip"})
+
+4. db.events.find({create_time: {$gte: ISODate("2012-11-25T21:49:00Z"), $lte: ISODate("2012-11-25T21:49:13Z")}, ip: "10.30.13.11"}, {_id:0,create_time:1,ip:1,domain: 1,size:1 }).sort({create_time:-1});
+
+5. count size group by ip
+
+db.events.find().forEach( function(obj) {
+    obj.size= parseInt(obj.size);
+    db.events.save(obj);
+
+});
+
+db.events.group({
+	"key": {"ip":true},
+	"initial":{"size":0},
+	"$reduce" : function(doc, prev) {
+        prev.size = prev.size + doc.size;
+    },
+    "condition" : {"create_time": {$gte: ISODate("2012-11-25T21:49:00Z"), $lte: ISODate("2012-11-25T21:49:13Z")}}
+})
+
+6. list the visit size by ip or domain
+
+////////////////////////////////////// references ///////////////////////////////////////////////
+db.runCommand({"group":{
+	"ns":"events",
+	"key":"ip",
+	"initial":{"size":0},
+	"$reduce" : function(doc, prev) {
+        prev.size = prev.size + doc.size;
+    },
+    "condition" : {create_time: {$gte: ISODate("2012-11-25T21:49:00Z"), $lte: ISODate("2012-11-25T21:49:13Z")}}
+}})
+
+db.runCommand({"group":{
+	"ns":"events",
+	"key":"ip",
+	"initial":{"size":0},
+	"$reduce" : function(doc, prev) {
+        prev.size = prev.size + doc.size;
+    }
+}})
+
+
+db.my_collection.find().forEach( function(obj) {
+    obj.my_value= parseInt(obj.my_value);
+    db.my_collection.save(obj);
+
+});
+////////////////////////////////////// references ///////////////////////////////////////////////
+
+from bson.code import Code
+>>> reducer = Code("""
+...                function(obj, prev){
+...                  prev.count++;
+...                }
+...                """)
+...
+>>> from bson.son import SON
+>>> results = db.things.group(key={"x":1}, condition={}, initial={"count": 0}, reduce=reducer)
+>>> for doc in results:
+...   print doc
+{u'count': 1.0, u'x': 1.0}
+{u'count': 2.0, u'x': 2.0}
+{u'count': 1.0, u'x': 3.0}
+
+//////////////////////////////////////////
+>>> result = coll.group(['uid'], None,
+                        {'list': []}, # initial
+                        'function(obj, prev) {prev.list.push(obj)}') # reducer
+>>> len(result) # will show three groups
+3
+>>> int(result[0]['uid'])
+
+///////////////////////////////////////////////////////////////////////////////
+parser test case
+    [1] create_time between 2012-11-25T21:49:00Z and 2012-11-25T21:49:13Z and ip=10.30.13.15
+    start_time_string = "2012-11-25T21:49:00Z"
+    start_time = datetime.strptime(start_time_string, "%Y-%m-%dT%H:%M:%SZ")
+    end_time_string = "2012-11-25T21:49:13Z"
+    end_time = datetime.strptime(end_time_string, "%Y-%m-%dT%H:%M:%SZ")
+    query = {'create_time': {'$gte':start_time, '$lte':end_time}, 'ip':'10.30.13.15'}
+    
+    [2] time (2012-11-25, 2012-11-26) and ip = 
+    [3] time = 2012-11-25 and ip=10.30.13.15
+    []  time in 2012-11 and ip=10.30.13.15
+    []  time in 2012-11(-7) and domain in ('aa','bb','cc')
+    db.food.find({"fruit" : ["apple", "banana", "peach"]})
+    
+    [] distinct domain where time >= 2012-11-25 and time time<=2012-11-26 and ip=10.30.13.15
+    [] count size by ip where time in 2012-11
+    [] count size by ip where time in 2012-11-25
+    [] count size by ip where time in 2012
+    
+///////////////////////////////////////////////////////////////////////////////
+query parser tokens
+tokens = [
+   'BETWEEN',
+   'IN',
+   'AND',
+   'STRING',
+   'IP',
+   'GT',
+   'LT',
+   'GE',
+   'LE',
+   'EQ',
+   'LPAREN',
+   'RPAREN',
+   'TIME',
+   'DAY',
+   'MONTH',
+   'ID'
+]
+
+LexToken(ID,'time',1,0)
+LexToken(ID,'between',1,5)
+LexToken(TIME,'2012-11-25T21:49:00Z',1,13)
+LexToken(ID,'and',1,34)
+LexToken(TIME,'2012-11-25T21:49:13Z',2,43)
+LexToken(ID,'and',2,64)
+LexToken(LPAREN,'(',3,73)
+LexToken(ID,'ip',3,74)
+LexToken(EQ,'=',3,76)
+LexToken(IP,'10.12.3.44',3,77)
+LexToken(ID,'or',3,88)
+LexToken(ID,'domain',4,96)
+LexToken(EQ,'=',4,103)
+LexToken(STRING,"' sad.cnn.com '",4,105)
+LexToken(RPAREN,')',4,120)
+
+query parser grammar
+
+condition	: condition and term
+			| term
+
+time_term	: time between TIME and TIME
+			| time between DAY and DAY
+			| time >= TIME
+			| time <= TIME
+			| time > TIME
+			| time < TIME
+			| time in DAY
+			| time in MONTH
+
+term		: ID = IP
+			| ID in_predicate
+			| time_term
+
+in_predicate	: in ( in_value_list )
+in_value_list	: factor {, factor}
+
+factor	: STRING
+		| IP
+		| TIME
+		| DAY
+		| MONTH
+		
+
+//////////////////////////////////////////////////////////////////
+#!/usr/bin/python
+
+class QueryParser:
+    '''parse the request to query array
+     parsing following queries:
+    [1] time >= 2012-11-25T21:49:00 and time<=2012-11-25T21:49:13Z and ip=10.30.13.15
+    [2] time >= 2012-11-25 and time<=2012-11-26 and ip = 
+    [3] time = 2012-11-25 and ip=10.30.13.15
+    []  time in 2012-11 and ip=10.30.13.15
+    []  time in 2012-11(-7) and domain in ('aa','bb','cc')
+    [] distinct domain where time >= 2012-11-25 and time time<=2012-11-26 and ip=10.30.13.15
+    [] count size by ip where time in 2012-11
+    [] count size by ip where time in 2012-11-25
+    [] count size by ip where time in 2012
+    '''
+    
+    def validate(self):
+        '''return false if the query is not valid'''
+        print 'OK'
+        
+    def parseQuery(self):
+        '''parse the request into pymongo query'''
+        print 'OK'
+        
+def test():
+    print 'OK'
+#    db = MongoDB('esm')
+#    num_of_events = db.count('events')
+#    print 'num_of_events = ' + str(num_of_events)
+    
+if __name__ == "__main__":test()
+

@@ -1,0 +1,145 @@
+body {
+    margin: 0 auto;
+    padding: 10px 0;
+    font-family: Arial, Helvetica, verdana, arial, sans-serif;
+    font-size: 14px;
+    background: none repeat scroll 0 0 white;
+    color: #454545;
+    border: 0 none;
+    vertical-align: baseline;
+}
+
+#wrapper {
+    margin: 0 auto;
+    width: 1020px;
+    height: 900px;
+}
+
+/************** header start ****************/
+#header {
+    width: 1008px;  
+    height: 60px;
+}
+
+.navigation {
+    height: 30px;
+    width: 1000px;
+    margin-left: 20px;
+    padding-top: 20px;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.navigation ul {
+    margin: 0;
+    padding: 0px;
+}
+
+.navigation li {
+    display: inline;
+}
+
+.navigation li a {
+    text-decoration: none;
+    font-size: 100%;    
+    color: #333333;
+}
+
+.navigation a:hover, .navigation .active a {
+    color: #2EA8DB;
+}
+
+.navigation .active a {
+    color: #2EA8DB;
+}
+
+/* use below two line to show splitter*/
+.navigation li:before { 
+    content: "|"; 
+    padding: 0 25px; 
+    font-weight: bold;
+    color: #333333;
+}
+
+.navigation li:first-child:before { 
+    content: ""; 
+}
+
+#query {
+    height: 40px;
+}
+
+
+#hours-table {
+    font-family: "Lucida Sans Unicode", "Lucida Grande", Sans-Serif;
+    font-size: 16px;
+    width: 900px;
+    text-align: left;
+    /*border-collapse: collapse;*/
+    margin: 0px 10px 10px 0px;
+}
+
+#content table {
+    border-collapse:collapse;
+}
+#content table, th, td {
+    border: 1px solid black;
+}
+
+#query {
+    height: 700px;
+    margin-left: 40px
+}
+
+/*** Footer ***/
+
+#footer {
+    clear: both;
+    margin: 0 auto;
+    padding: 0px 40px;  
+}
+
+#footer p {
+    font-size: 12px;
+    color: #737373;
+}
+
+#legal {
+    float: left;
+    width: 610px;
+    color: #737373;
+}
+
+#links {
+    float: right;
+}
+
+#links li:before { 
+    content: "|"; 
+    padding: 0 15px; 
+    font-weight: bold;
+    color: #333333;
+}
+
+#links li:first-child:before { 
+    content: ""; 
+}
+
+#links ul {
+    margin: 0;
+    padding: 0px;
+}
+
+#links li {
+    display: inline;
+}
+
+#links li a {
+    text-decoration: none;
+    font-size: 100%;    
+    color: #333333;
+}
+
+#links a:hover, #links .active a {
+    color: #2EA8DB;
+}

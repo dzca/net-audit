@@ -1,0 +1,33 @@
+formatters:
+    simpleFormater:
+        format: '%(asctime)s - %(levelname)s: %(message)s'
+        datefmt: '%Y/%m/%d %H:%M:%S'
+
+handlers:
+    console:
+        class: logging.StreamHandler
+        formatter: simpleFormater
+        level: DEBUG
+        stream: ext://sys.stdout
+    err_file:
+        class : logging.FileHandler
+        formatter: simpleFormater
+        level: ERROR
+        filename: /opt/esm/logs/error.log
+    info_file:
+        class : logging.FileHandler
+        formatter: simpleFormater
+        level: INFO
+        filename: /opt/esm/logs/info.log
+
+loggers:
+    clogger:
+        level: DEBUG
+        handlers: [console]
+    f_error_logger:
+        handlers: [err_file]
+    f_info_logger:
+        handlers: [info_file]
+root:
+    level: DEBUG
+    handlers: [console, err_file, info_file]

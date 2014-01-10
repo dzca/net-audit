@@ -1,0 +1,33 @@
+Third party packages
+
+[1]mongodb
+#sudo apt-key adv --keyserver keyserver.ubuntu.com --recv 7F0CEB10
+#vi /etc/apt/sources.list.d/10gen.list add:
+deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen
+#apt-get update
+#apt-get install mongodb-10gen
+
+[2]justniffer
+$ sudo add-apt-repository ppa:oreste-notelli/ppa 
+$ sudo apt-get update
+$ sudo apt-get install justniffer 
+
+[3]pymongo
+# apt-get install python-pip
+#pip install pymongo
+
+[4]justniffer
+$ sudo add-apt-repository ppa:oreste-notelli/ppa 
+$ sudo apt-get update
+$ sudo apt-get install justniffer
+
+apt-get install sysv-rc-conf
+
+ifconfig | grep "inet addr:" | grep -v 127.0.0.1 | sed -e 's/inet addr://g' | awk '{print $1}'
+
+[5]install a daemon on ubuntu:
+(1) create a daemon file xxd
+(2) copy file xxd into /etc/init.d/
+(3) chmod o+x /etc/init.d/xxd
+(4) update-rc.d xxd defaults
+(5) service nifferd start

@@ -1,0 +1,134 @@
+There are loads of programs on the internet which are squid log analyzers. While this article does address the same thing, it’s presented more with an eye to how you can use standard linux bash scripts to obtain almost any output you want from log files. In the following script I use no python / perl or other high level language. While this means that probably the resulting log analyser is not as fast and efficient as the others which do use them, the exercise is more to show how a non-programming-savvy admin can still make his life easier right from the linux shell. To skip all explanation and go direct to the final script, click here.
+
+Also, the script is highly customizable so that it can parse other logs in other formats– it’s simply an iterative process where you identify which parts of the original log files you need.
+
+In this particular script, I want to parse the access.log files to see which sites are the most visited, and which have the most cache hits. By default, entries in the squid access logs looks like (they should be on a single line):
+
+    1305800355.376   5030 172.16.31.63 TCP_MISS/200 32491 CONNECT m.google.com:443 – DIRECT/209.85.143.193 -
+
+    1304761104.471   3189 192.168.100.69 TCP_MISS/204 252 GET http://www.google.co.uk/gen_204? – DIRECT/209.85.147.106 text/html
+
+First order of the day is to extract the site. For a human it’s very easy to see it’s the 7th field in the logs. Linux can extract the 7th field by using the “cut” command. So my first instinct was to run:
+
+    cat access.log | cut –d “ “ –f 7
+
+which means using the space character as a delimiter and extract the 7th field. However, that works for some but not all the log entries. The reason being that the 2nd field varies in size, leaving a variable number of spaces before it… So we need to eliminate that variable. The solution is to “cut” the output twice. The first “cut” will remove the variable space, the second cut will extract the field we need.
+
+For the CONNECT entry I used:
+
+    cat access.log | cut -d “/” -f 2 | cut -d ” ” -f 4
+
+The first cut uses the “/” character as a delimiter and we take out the second field up to thenext “/” character. So we’re left with:
+
+    200 32491 CONNECT m.google.com:443 – DIRECT
+
+The second cut just extracts the 4th field using space as a delimiter – and we’re done. But it wont work for the second HTTP entry due to the initial “http://”. 
+This actually makes it simpler for us because if you look at the entry we see the host is in the 4th field delimited by “/”. So we can use:
+
+    cat access.log | cut -d “/” -f 4
+
+We now have a way of extracting the hosts. Now we need a way to count the number of times they appear in the logs to get our hitcount. The linux command “uniq –c” will count the number of times a string appears consecutively in a file. Note the “consecutively”. This means that in order to actually count all instances of a string in a file, theses instances must be under each other for example:
+
+    www.google.com
+
+    www.google.com
+
+    www.yahoo.com
+
+    www.yahoo.com
+
+and not:
+
+    www.google.com
+
+    www.yahoo.com
+
+    www.google.com
+
+    www.yahoo.com
+
+This means we have to sort the file first, which is easily done with the “sort” linux command. One nice feature of the sort command is if you use:
+
+    sort file1 file2
+
+It will sort the contents of both files together and output the result. This will be useful to us later on since we’re running different “cut” commands for HTTP and CONNECT log entries.
+
+Finally so as to keep the report brief, we only want to see the sites with the highest number of hits… this means we only want the first few lines of the file – again easy to do with the linux “head” command.
+
+The final script (see inline comments. Note some lines should be on a single line):
+
+    #!/bin/bash
+
+    #use GREP to extract the host using CUT from log entries containing CONNECT
+    cat /usr/local/squid/var/logs/access.log.0 | grep CONNECT | cut -d “/” -f 2 | cut -d ” ” -f 4 > squid_ssl.log
+
+    #sort the file and report the unique entries, storing the output in a temp file
+    sort squid_ssl.log > squid_ssl2.log
+    uniq -c squid_ssl2.log | sort -r > squid_ssl.log
+
+    #use GREP to extract the host using CUT from log entries containing HTTP
+    cat /usr/local/squid/var/logs/access.log.0 | grep http | cut -d “/” -f 4 > squid_http.log
+
+    #sort the file and report the unique entries, storing the output in a temp file
+    sort squid_http.log > squid_http2.log
+    uniq -c squid_http2.log | sort -r > squid_http.log
+
+    #merge the two temp files together in a descending order
+    sort -r squid_http.log squid_ssl.log > squid_compiled.log
+
+    #insert pretty headers
+    echo “———————————————” > squid-final.log
+    echo “Most heavily visited sites” >> squid-final.log
+    echo “———————————————” >> squid-final.log
+
+    #use head to show only the sites with highest hit count
+    head squid_compiled.log >> squid-final.log
+
+    #do the whole process for cache HITS
+    cat /usr/local/squid/var/logs/access.log.0 | grep http | grep HIT | cut -d “/” -f 4 > squid_hits.log
+    sort squid_hits.log > squid_hits2.log
+    uniq -c squid_hits2.log | sort -r > squid_hits.log
+
+    echo “———————————————” >> squid-final.log
+    echo “Sites with highest cache hit count” >> squid-final.log
+    echo “———————————————” >> squid-final.log
+
+    head squid_hits.log >> squid-final.log
+
+    #cleanup – comment this out for debugging
+    rm squid_*
+
+The above will give an output like so:
+
+    ———————————————
+    Most heavily visited sites
+    ———————————————
+    13765 192.168.254.1
+    5734 img100.xvideos.com
+    4661 stork48.dropbox.com
+    4378 m.google.com:443
+    2484 profile.ak.fbcdn.net
+    1778 www.facebook.com
+    1716 www.google.co.uk
+    1318 0.59.channel.facebook.com
+    1297 www.google-analytics.com
+    1249 www.google.com
+    ———————————————
+    Sites with highest cache hit count
+    ———————————————
+    335 img100.xvideos.com
+    192 s7.addthis.com
+    125 www.cisco.com
+    125 static.ak.fbcdn.net
+    109 r.mzstatic.com
+    109 mmv.admob.com
+    97 ebooks-it.org
+    92 profile.ak.fbcdn.net
+    84 pagead2.googlesyndication.com
+    80 cachend.fling.com
+
+I don’t expect this to be placed in anyone’s production environment,  but if you’re considering it, be aware that it’s probably better to integrate the script with a MySQL database if there is significant traffic. It will make it much more robust, archivable and reportable. If you go down this path, research the following for a start:
+
+mysql -u[user] -p[pass] -e "[mysql commands]
+
+Use your imagination to extend and write your own scripts that can make monitoring and troubleshooting so much easier…
